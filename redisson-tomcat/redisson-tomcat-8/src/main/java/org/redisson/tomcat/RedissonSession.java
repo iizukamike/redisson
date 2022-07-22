@@ -126,16 +126,7 @@ public class RedissonSession extends StandardSession {
 
             return value;
         } else {
-            if (!loaded) {
-                synchronized (this) {
-                    if (!loaded) {
-                        Map<String, Object> storedAttrs = map.readAllMap();
-                        
-                        load(storedAttrs);
-                        loaded = true;
-                    }
-                }
-            }
+            ensureLoaded();
         }
 
         return super.getAttribute(name);
@@ -153,6 +144,8 @@ public class RedissonSession extends StandardSession {
             attributeKeys.addAll(map.readAllKeySet());
             attributeKeys.addAll(loadedAttributes.keySet());
             return Collections.enumeration(attributeKeys);
+        } else {
+            ensureLoaded();
         }
         
         return super.getAttributeNames();
@@ -506,6 +499,19 @@ public class RedissonSession extends StandardSession {
 //        if (usages.decrementAndGet() == 0) {
         if (usages.get() == 0 || usages.decrementAndGet() == 0) {
             loadedAttributes.clear();
+        }
+    }
+
+    private void ensureLoaded() {
+        if (!loaded) {
+            synchronized (this) {
+                if (!loaded) {
+                    Map<String, Object> storedAttrs = map.readAllMap();
+
+                    load(storedAttrs);
+                    loaded = true;
+                }
+            }
         }
     }
 }
